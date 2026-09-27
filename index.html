@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growing Tulip Bouquet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 50%, #f9a8d4 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 500px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .vase {
+            position: relative;
+            width: 120px;
+            height: 80px;
+            background: linear-gradient(to right, #e8d5c4, #f5ead2, #e8d5c4);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 
+                inset -5px 0 10px rgba(0,0,0,0.1),
+                0 10px 30px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .vase::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 20px;
+            background: linear-gradient(to right, #d4c5b9, #e8d5c4, #d4c5b9);
+            border-radius: 50%;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        .text {
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
+            color: #ec4899;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+        }
+
+        /* Glow effect */
+        @keyframes glow {
+            0%, 100% {
+                filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 25px rgba(236, 72, 153, 0.9));
+            }
+        }
+
+        .glowing {
+            animation: glow 2.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <div class="vase"></div>
+        <div class="text">🌷 Growing Bouquet 🌷</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 500;
+        canvas.height = 600;
+
+        const tulips = [];
+        let animationProgress = 0;
+
+        class Tulip {
+            constructor(x, y, angle, delay) {
+                this.startX = x;
+                this.startY = y;
+                this.angle = angle;
+                this.delay = delay;
+                this.height = 0;
+                this.maxHeight = 200 + Math.random() * 80;
+                this.petalSize = 15 + Math.random() * 10;
+                this.wobble = Math.random() * 0.3;
+            }
+
+            grow(progress) {
+                const delayedProgress = Math.max(0, progress - this.delay);
+                this.height = this.maxHeight * Math.min(1, delayedProgress * 1.2);
+            }
+
+            draw(ctx) {
+                if (this.height < 5) return;
+
+                // Stem
+                const endX = this.startX + Math.sin(this.angle + this.wobble) * this.height;
+                const endY = this.startY - this.height;
+
+                // Stem glow
+                ctx.strokeStyle = `rgba(34, 197, 94, 0.4)`;
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(this.startX, this.startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Stem
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(this.startX, this.startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Leaves
+                const leafAngle1 = this.angle - 0.6;
+                const leafAngle2 = this.angle + 0.6;
+                this.drawLeaf(ctx, this.startX, this.startY - this.height * 0.6, leafAngle1);
+                this.drawLeaf(ctx, this.startX, this.startY - this.height * 0.7, leafAngle2);
+
+                // Tulip flower
+                if (this.height > 50) {
+                    this.drawTulip(ctx, endX, endY);
+                }
+            }
+
+            drawLeaf(ctx, x, y, angle) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillStyle = '#16a34a';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 8, 25, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            drawTulip(ctx, x, y) {
+                const petalColors = [
+                    '#ec4899',
+                    '#f472b6',
+                    '#f91880'
+                ];
+
+                // Outer glow
+                ctx.fillStyle = `rgba(236, 72, 153, 0.2)`;
+                ctx.beginPath();
+                ctx.arc(x, y, this.petalSize + 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Petals
+                for (let i = 0; i < 3; i++) {
+                    const petalAngle = (i * Math.PI * 2 / 3) + (animationProgress * 0.5);
+                    const px = x + Math.cos(petalAngle) * this.petalSize;
+                    const py = y + Math.sin(petalAngle) * this.petalSize;
+
+                    ctx.fillStyle = petalColors[i];
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, this.petalSize * 0.8, this.petalSize * 1.2, petalAngle, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Petal glow
+                    ctx.fillStyle = `rgba(236, 72, 153, 0.3)`;
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, this.petalSize * 1, this.petalSize * 1.4, petalAngle, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Center
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(x, y, this.petalSize * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function createBouquet() {
+            tulips.length = 0;
+            const centerX = 250;
+            const centerY = 500;
+            const tulipCount = 15;
+
+            for (let i = 0; i < tulipCount; i++) {
+                const angle = (i / tulipCount) * Math.PI * 2;
+                const radius = 30 + Math.random() * 20;
+                const startX = centerX + Math.cos(angle) * radius;
+                const startY = centerY + Math.sin(angle) * radius;
+                const delay = (i / tulipCount) * 0.8;
+
+                tulips.push(new Tulip(startX, startY, angle, delay));
+            }
+        }
+
+        function animate() {
+            animationProgress += 0.008;
+
+            if (animationProgress > 1.8) {
+                animationProgress = 0;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            tulips.forEach(tulip => {
+                tulip.grow(animationProgress);
+                tulip.draw(ctx);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        createBouquet();
+        animate();
+    </script>
+</body>
+</html>
